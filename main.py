@@ -12,7 +12,7 @@ from PyQt5.QtCore import *
 import sys
 
 
-# попробую переписать test2 на классы
+
 
 # дочерний класс, наследующийся от QWidget
 # Класс QWidget в PyQt представляет базовый класс для всех виджетов (окон, кнопок, полей и т.д.).
@@ -44,9 +44,26 @@ class MainWindow(QWidget):
 
     # виджеты
     def add_widgets(self):
-        self.btn_select_new_file = self.create_button("Файл", self.select_file)
-        self.btn_select_new_file.move(0, 0)
-        self.btn_select_new_file.setIcon(QtGui.QIcon('icons/select_file_icon.png'))
+
+
+
+
+        # создание кнопок в выпадающем списке
+        self.comboBox_files = QComboBox(self)
+        self.comboBox_files.addItem('Файл') # PlaceHolder
+        self.comboBox_files.addItem('Действие 1')
+        self.comboBox_files.addItem('Действие 2')
+        self.comboBox_files.addItem('Изображение')
+        self.comboBox_files.move(0, 0)
+
+        # иконка комбобоксу
+        self.comboBox_files.setStyleSheet('QComboBox::down-arrow { image: url(icons/select_file_icon.png); }')
+
+        # вызов действия кнопки при активации ее внутри вып списка
+        self.comboBox_files.activated.connect(self.perform_action_on_select)
+
+
+
 
         self.btn_change_img_to_gray = self.create_button("Изображение в серый", self.img_to_gray)
         self.btn_change_img_to_gray.move(100, 0)
@@ -54,6 +71,28 @@ class MainWindow(QWidget):
 
         self.label_select_first = self.create_label_first()
         self.label_select_second = self.create_label_second()
+
+
+
+
+
+
+
+    # функция при активации комбобокса
+    def perform_action_on_select(self):
+        # Функция, которая будет вызываться при выборе элемента в выпадающем списке
+        selected_action = self.comboBox_files.currentText()
+        if selected_action == 'Изображение':
+            print('Выполнено Изображение')
+            self.select_file()
+        elif selected_action == 'Действие 1':
+            print('Выполнено Действие 1')
+        elif selected_action == 'Действие 2':
+            print('Выполнено Действие 2')
+        else:
+            print('Выберите действие')
+
+
 
     # создание общего стиля отступа для объектов
     def create_label_first(self):

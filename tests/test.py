@@ -128,6 +128,11 @@ class MainWindow(QWidget):
 
     # показ оригинального изображения
     def show_image_first(self, img):
+
+        if img is None:
+            print('тут ничего нету')
+            return
+
         img_label = self.create_label_first()
         # img_label.resize(img.width(), img.height())
         # хранимое изображение
@@ -154,6 +159,9 @@ class MainWindow(QWidget):
         self.show_image_second(qImg_gray)
 
     def show_image_second(self, img):
+        if img is None:
+            print('тут ничего нету')
+            return
         # отображение измененного изображения
         print('Процесс отображения серого')
         img_label = self.create_label_second()
