@@ -16,7 +16,7 @@ class VideoSelector(QWidget):
 
         self.video_path = None
         self.slider_position = 0
-
+        self.orig_frames = None
 
 
         layout = QVBoxLayout()
@@ -81,19 +81,21 @@ class VideoSelector(QWidget):
 
                 self.image_updated.emit(q_image)
 
+                self.orig_frames = frame
+
 
                 self.label.setPixmap(pixmap.scaled(self.label.width(), self.label.height(), Qt.KeepAspectRatio))
 
             # self.slider.setMaximum(int(cap.get(cv2.CAP_PROP_FRAME_COUNT)) - 1)
             cap.release()
 
-    def get_selected_frame(self):
-        if self.video_path:
-            cap = cv2.VideoCapture(self.video_path)
-            cap.set(cv2.CAP_PROP_POS_FRAMES, self.slider_position)
-            ret, frame = cap.read()
-            cap.release()
-            return frame
+    # def get_selected_frame(self):
+    #     if self.video_path:
+    #         cap = cv2.VideoCapture(self.video_path)
+    #         cap.set(cv2.CAP_PROP_POS_FRAMES, self.slider_position)
+    #         ret, frame = cap.read()
+    #         cap.release()
+    #         return frame
 
 
 

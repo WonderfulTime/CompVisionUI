@@ -10,6 +10,7 @@ from PyQt5.QtWidgets import *
 from PyQt5.QtGui import *
 from PyQt5.QtCore import *
 import sys
+import numpy as np
 
 
 
@@ -23,8 +24,11 @@ class MainWindow(QWidget):
         # использование композиция для решения проблемы порядка наследования возникающей из-за того, что несколько раз наследуется от QWidget
         self.video_selector = VideoSelector()
 
+        # передача изображения из класса VideoSelector
         self.video_selector.image_updated.connect(self.show_image_first)
         # self.video_selector = VideoSelector(main_widget=self)
+        self.Video_img = False
+
 
 
 
@@ -98,6 +102,7 @@ class MainWindow(QWidget):
         if selected_action == 'Изображение':
             print('Выполнено Изображение')
             self.hide_slider()
+            self.Video_img = False
             self.select_file()
 
         elif selected_action == 'Видео':
@@ -111,6 +116,9 @@ class MainWindow(QWidget):
             # сброс позиции слайдера на 0
             self.slider.setValue(0)
             self.show_slider()
+
+            # доп проверка для преобр кадров видео
+            self.Video_img = True
             self.video_selector.select_video()
             print('Выполнено Видео')
 
@@ -194,6 +202,10 @@ class MainWindow(QWidget):
     # показ оригинального изображения
     def show_image_first(self, img):
         # при попытке перевода в серый вылет, скорее всего из-за кодировки изображения
+        if self.Video_img == True:
+            self.q_image = img
+
+
         img_label = self.create_label_first()
         # img_label.resize(img.width(), img.height())
         # хранимое изображение
@@ -204,8 +216,24 @@ class MainWindow(QWidget):
 
     # конверт изображения в серый
     def img_to_gray(self):
+        if self.import_image is not None:
+            import_image = self.import_image
+
+        elif self.Video_img == True:
+            print('кадры')
+
+            # тырим фрейм изображения из класс VideoSelector
+            import_image = self.video_selector.orig_frames
+
+
+        # если изображение не выбрано
+        else:
+            print('Нет изображения')
+            return
+
+
         print('Процесс преобразования в серый')
-        origin_img = self.import_image
+        origin_img = import_image
         second_img = cv2.cvtColor(origin_img, cv2.COLOR_BGR2GRAY)
 
         h, w = int(self.win_height / 2), int(self.win_width / 2)
@@ -218,6 +246,8 @@ class MainWindow(QWidget):
         qImg_gray = QImage(self.second_img.data, width, height, QImage.Format_Grayscale8)
         # отрисовка серого изображения
         self.show_image_second(qImg_gray)
+
+
 
     def show_image_second(self, img):
         # отображение измененного изображения
