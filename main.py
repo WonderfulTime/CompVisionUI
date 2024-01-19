@@ -1,4 +1,4 @@
-
+from video_selector import VideoSelector
 import cv2
 import tkinter as tk
 from tkinter import filedialog
@@ -20,11 +20,23 @@ class MainWindow(QWidget):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
+        # использование композиция для решения проблемы порядка наследования возникающей из-за того, что несколько раз наследуется от QWidget
+        self.video_selector = VideoSelector()
+
+        self.video_selector.image_updated.connect(self.show_image_first)
+        # self.video_selector = VideoSelector(main_widget=self)
+
+
+
+
         self.win_height = 1200
         self.win_width = 850
         self.import_image = None
         self.second_img = None
         # self.resizeEvent(self.resizeEvent)
+
+        self.slider_position = 0
+
 
         self.init_ui()
         # self.show()
@@ -34,6 +46,7 @@ class MainWindow(QWidget):
         # self.setFixedSize(self.win_height, self.win_width)
         self.add_widgets()
         self.connect_events()
+        self.create_slider()
 
     # тут обновляются виджеты при изменении размера окна
     def resizeEvent(self, event):
@@ -51,12 +64,12 @@ class MainWindow(QWidget):
         # создание кнопок в выпадающем списке
         self.comboBox_files = QComboBox(self)
         self.comboBox_files.addItem('Файл') # PlaceHolder
-        self.comboBox_files.addItem('Действие 1')
+        self.comboBox_files.addItem('Видео')
         self.comboBox_files.addItem('Действие 2')
         self.comboBox_files.addItem('Изображение')
         self.comboBox_files.move(0, 0)
 
-        # иконка комбобоксу
+        # иконка комбобокса
         self.comboBox_files.setStyleSheet('QComboBox::down-arrow { image: url(icons/select_file_icon.png); }')
 
         # вызов действия кнопки при активации ее внутри вып списка
@@ -78,17 +91,32 @@ class MainWindow(QWidget):
 
 
 
-    # функция при активации комбобокса
+    # функция при активации комбобокса "Файл"
     def perform_action_on_select(self):
         # Функция, которая будет вызываться при выборе элемента в выпадающем списке
         selected_action = self.comboBox_files.currentText()
         if selected_action == 'Изображение':
             print('Выполнено Изображение')
+            self.hide_slider()
             self.select_file()
-        elif selected_action == 'Действие 1':
-            print('Выполнено Действие 1')
+
+        elif selected_action == 'Видео':
+            # cur_lab_pos = self.label.pos()
+            # new_xpos_slider, new_ypos_slider = cur_lab_pos.x(), cur_lab_pos.y() хз как брать координаты от label
+            new_xpos_slider = 30
+            new_ypos_slider = 400 + 10
+
+
+            self.slider.move(new_xpos_slider, new_ypos_slider)
+            # сброс позиции слайдера на 0
+            self.slider.setValue(0)
+            self.show_slider()
+            self.video_selector.select_video()
+            print('Выполнено Видео')
+
         elif selected_action == 'Действие 2':
             print('Выполнено Действие 2')
+
         else:
             print('Выберите действие')
 
@@ -99,6 +127,7 @@ class MainWindow(QWidget):
         label = QLabel(self)
         label.setScaledContents(True)
         label.move(30, 100)
+
 
         label.resize(550, 300)
         label.setStyleSheet("background-color:  rgb(43,43,43)")
@@ -164,6 +193,7 @@ class MainWindow(QWidget):
 
     # показ оригинального изображения
     def show_image_first(self, img):
+        # при попытке перевода в серый вылет, скорее всего из-за кодировки изображения
         img_label = self.create_label_first()
         # img_label.resize(img.width(), img.height())
         # хранимое изображение
@@ -219,6 +249,27 @@ class MainWindow(QWidget):
         h = event.size().height()
         print(w, h)
 
+    def create_slider(self):
+        self.slider = QSlider(Qt.Horizontal, self)
+        self.slider.hide()  # Скрываем слайдер при создании
+        self.slider.setFixedWidth(300)
+        self.slider.sliderMoved.connect(self.set_slider_position)
+
+
+        return self.slider
+
+    # скрытие слайдера
+    def hide_slider(self):
+        self.slider.hide()
+
+    # показ слайдера
+    def show_slider(self):
+        self.slider.show()
+
+    def set_slider_position(self, position):
+
+        self.slider_position = position
+        self.video_selector.play_video(self.slider_position)
 
 
 
