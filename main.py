@@ -1,4 +1,6 @@
 from video_selector import VideoSelector
+from screen_capturing import ScreenCapture
+# from settings import SettingsDialog
 import cv2
 import tkinter as tk
 from tkinter import filedialog
@@ -10,6 +12,7 @@ from PyQt5.QtWidgets import *
 from PyQt5.QtGui import *
 from PyQt5.QtCore import *
 import sys
+
 import numpy as np
 
 
@@ -24,13 +27,15 @@ class MainWindow(QWidget):
         # использование композиция для решения проблемы порядка наследования возникающей из-за того, что несколько раз наследуется от QWidget
         self.video_selector = VideoSelector()
 
+        # класс скриншота
+        self.screen_capturing = ScreenCapture()
+
         # передача изображения из класса VideoSelector
         self.video_selector.image_updated.connect(self.show_image_first)
         # self.video_selector = VideoSelector(main_widget=self)
         self.Video_img = False
 
-
-
+        self.display_rule = "intensity"  # начальное правило - интенсивность
 
 
         self.win_height = 1200
@@ -69,7 +74,7 @@ class MainWindow(QWidget):
         self.comboBox_files = QComboBox(self)
         self.comboBox_files.addItem('Файл') # PlaceHolder
         self.comboBox_files.addItem('Видео')
-        self.comboBox_files.addItem('Действие 2')
+        self.comboBox_files.addItem('Скриншот')
         self.comboBox_files.addItem('Изображение')
         self.comboBox_files.move(0, 0)
 
@@ -81,13 +86,32 @@ class MainWindow(QWidget):
 
 
 
-
-        self.btn_change_img_to_gray = self.create_button("Изображение в серый", self.img_to_gray)
+        self.btn_change_img_to_gray = self.create_button("Цвет/полутон", self.img_to_gray)
         self.btn_change_img_to_gray.move(100, 0)
         self.btn_change_img_to_gray.setIcon(QtGui.QIcon('icons/edit_icon.png'))
 
+
+
+        # комбобокс для настроек
+        # Добавляем кнопку "Настройки"
+        self.comboBox_settings = QComboBox(self)
+        self.comboBox_settings.addItem('Настройка преобразования в полутон')  # PlaceHolder
+        self.comboBox_settings.addItem("Интенсивность")
+        self.comboBox_settings.addItem("Яркость")
+        self.comboBox_settings.addItem("Красный")
+        self.comboBox_settings.addItem("Зеленый")
+        self.comboBox_settings.addItem("Синий")
+
+        self.comboBox_settings.move(210, 0)
+        self.comboBox_settings.activated.connect(self.activation_settings_comboBox)
+
+
+
+
+
         self.label_select_first = self.create_label_first()
         self.label_select_second = self.create_label_second()
+
 
 
 
@@ -122,11 +146,43 @@ class MainWindow(QWidget):
             self.video_selector.select_video()
             print('Выполнено Видео')
 
-        elif selected_action == 'Действие 2':
-            print('Выполнено Действие 2')
+        elif selected_action == 'Скриншот':
+            print('Делаем скрин')
+            # посылаем в модуль для скринов размеры мэйн окна для корректировки изображений
+            taken_screenshot, original_screen_img = self.screen_capturing.msgBox(self.win_height, self.win_width)
+            self.import_image = original_screen_img
+            self.Video_img = False
+            print('отпр данные в show_image_first')
+            self.show_image_first(taken_screenshot)
+
+
+
 
         else:
             print('Выберите действие')
+
+
+    # функция при активации комбобокса настроек
+    def activation_settings_comboBox(self):
+        selected_action = self.comboBox_settings.currentText()
+
+        if selected_action == "Интенсивность":
+            self.display_rule = "intensity"
+
+        elif selected_action == "Яркость":
+            self.display_rule = "brightness"
+
+        elif selected_action == "Красный":
+            self.display_rule = "red"
+
+        elif selected_action == "Зеленый":
+            self.display_rule = "green"
+
+        elif selected_action == "Синий":
+            self.display_rule = "blue"
+
+        print(self.display_rule)
+
 
 
 
@@ -199,9 +255,14 @@ class MainWindow(QWidget):
         else:
             print("Выбор файла был отменен.")
 
+
+
+
+
+
     # показ оригинального изображения
     def show_image_first(self, img):
-        # при попытке перевода в серый вылет, скорее всего из-за кодировки изображения
+        # при попытке перевода в серый вылет, скорее всего из-за кодировки изображения (fixed)
         if self.Video_img == True:
             self.q_image = img
 
@@ -214,8 +275,38 @@ class MainWindow(QWidget):
         print("Отобразил img")
         # self.pixmap_origin = pixmap_origin
 
+
+    def rule_for_second_img(self, rgb_image):
+
+
+        # дефолтное определение значения
+        gray_image = (rgb_image[:, :, 0] + rgb_image[:, :, 1] + rgb_image[:, :, 2]) // 3
+
+        if self.display_rule == "intensity":
+            gray_image = (rgb_image[:, :, 0] + rgb_image[:, :, 1] + rgb_image[:, :, 2]) // 3
+        elif self.display_rule == "brightness":
+            gray_image = (0.299 * rgb_image[:, :, 0] + 0.587 * rgb_image[:, :, 1] + 0.114 * rgb_image[:, :, 2]).astype(
+                np.uint8)
+
+        elif self.display_rule == "red":
+            print(f"Processing 'red'. Shape of rgb_image: {rgb_image.shape}")
+            gray_image = rgb_image[:, :, 0]
+            print(f"Processed 'red'. Shape of gray_image: {gray_image.shape}")
+
+        elif self.display_rule == "green":
+            print(f"Shape of rgb_image[:, :, 1]: {rgb_image[:, :, 1].shape}")
+            gray_image = rgb_image[:, :, 1]
+        elif self.display_rule == "blue":
+            print(f"Shape of rgb_image[:, :, 2]: {rgb_image[:, :, 2].shape}")
+            gray_image = rgb_image[:, :, 2]
+
+        return gray_image
+
+
+
     # конверт изображения в серый
     def img_to_gray(self):
+        # скорее всего условия неверно поставлены
         if self.import_image is not None:
             import_image = self.import_image
 
@@ -225,6 +316,7 @@ class MainWindow(QWidget):
             # тырим фрейм изображения из класс VideoSelector
             import_image = self.video_selector.orig_frames
 
+        # elif
 
         # если изображение не выбрано
         else:
@@ -232,19 +324,35 @@ class MainWindow(QWidget):
             return
 
 
+        print(f'self.Video_img = {self.Video_img}')
         print('Процесс преобразования в серый')
         origin_img = import_image
-        second_img = cv2.cvtColor(origin_img, cv2.COLOR_BGR2GRAY)
+        # second_img = cv2.cvtColor(origin_img, cv2.COLOR_BGR2GRAY)
 
-        h, w = int(self.win_height / 2), int(self.win_width / 2)
-        self.second_img = cv2.resize(second_img, (h, w))
+        try:
+
+            h, w = int(self.win_height / 2), int(self.win_width / 2)
+            second_img = cv2.resize(origin_img, (h, w))
+
+        except Exception as e:
+            print(e)
+
+        # вызов правила преобразования
+        second_img = self.rule_for_second_img(second_img)
+
         # print(self.second_img)
-        height, width = self.second_img.shape
+        height, width = second_img.shape
         print(f"x={height} y={width}")
         bytesPerLine = 3 * width
         # переменная содержащая изображение
-        qImg_gray = QImage(self.second_img.data, width, height, QImage.Format_Grayscale8)
-        # отрисовка серого изображения
+        try:
+            data_bytes = bytes(second_img)
+            qImg_gray = QImage(data_bytes, width, height, QImage.Format_Grayscale8)
+        except Exception as e:
+            print(e)
+
+        # отрисовка серого (монохромного) изображения
+        print('qImg_gray')
         self.show_image_second(qImg_gray)
 
 
@@ -254,6 +362,7 @@ class MainWindow(QWidget):
         print('Процесс отображения серого')
         img_label = self.create_label_second()
         # img_label.resize(img.width(), img.height())
+
         # хранимое изображение
         pixmap_second = QPixmap.fromImage(img)
         img_label.setPixmap(pixmap_second)
